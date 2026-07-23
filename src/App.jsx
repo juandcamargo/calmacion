@@ -140,18 +140,24 @@ function useCountUp(value, duration = 700) {
 /* ---------------- face avatar (doubles as level avatar) ---------------- */
 
 function CalmFace({ days }) {
-  const stage = Math.min(Math.floor(days / 3), 10);
-  const t = stage / 10;
+  const maxDays = LEVELS[LEVELS.length - 1].days;
+  const t = Math.min(Math.max(days / maxDays, 0), 1);
   const bg = lerpColor("#C9D4CD", C.accent, t);
-  const browRotate = -8 + t * 14;
-  const mouthCurve = 6 - t * 30;
+  const browRotate = -20 + t * 32;
+  const mouthCurve = 16 - t * 52;
+  const eyeHappy = Math.min(Math.max((t - 0.55) / 0.45, 0), 1);
+  const blush = Math.min(Math.max((t - 0.35) * 1.2, 0), 1);
   return (
     <svg viewBox="0 0 160 160" className="w-full h-full breathing">
       <circle cx="80" cy="80" r="72" fill={bg} />
+      <ellipse cx="46" cy="96" rx="10" ry="6" fill="#fff" opacity={blush * 0.45} />
+      <ellipse cx="114" cy="96" rx="10" ry="6" fill="#fff" opacity={blush * 0.45} />
       <line x1="46" y1="66" x2="66" y2="66" stroke="#fff" strokeWidth="4" strokeLinecap="round" transform={`rotate(${browRotate} 56 66)`} opacity="0.9" />
       <line x1="94" y1="66" x2="114" y2="66" stroke="#fff" strokeWidth="4" strokeLinecap="round" transform={`rotate(${-browRotate} 104 66)`} opacity="0.9" />
-      <circle cx="58" cy="82" r="6" fill="#fff" />
-      <circle cx="102" cy="82" r="6" fill="#fff" />
+      <circle cx="58" cy="82" r="6" fill="#fff" opacity={1 - eyeHappy} />
+      <circle cx="102" cy="82" r="6" fill="#fff" opacity={1 - eyeHappy} />
+      <path d="M 50 84 Q 58 74 66 84" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" opacity={eyeHappy} />
+      <path d="M 94 84 Q 102 74 110 84" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" opacity={eyeHappy} />
       <path d={`M 54 106 Q 80 ${106 + mouthCurve} 106 106`} fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="round" opacity="0.95" />
     </svg>
   );
@@ -819,7 +825,7 @@ function HomeTab({ lvl, overallCalmMs, overallCalmDays, personStreak, calmMilest
             <div key={`c${m}`} className="pop-in shrink-0 rounded-full px-3.5 py-2 text-xs font-extrabold flex items-center gap-1.5" style={{ background: C.accent, color: "#fff" }}><Award size={13} /> {m}d en calma</div>
           ))}
           {Array.from({ length: eqMilestonesAchieved }).map((_, i) => (
-            <div key={`e${i}`} className="pop-in shrink-0 rounded-full px-3.5 py-2 text-xs font-extrabold flex items-center gap-1.5" style={{ background: C.eq, color: "#fff" }}><Award size={13} /> {(i + 1) * 5} EQ</div>
+            <div key={`e${i}`} className="pop-in shrink-0 rounded-full px-3.5 py-2 text-xs font-extrabold flex items-center gap-1.5" style={{ background: C.eq, color: "#fff" }}><Award size={13} /> {(i + 1) * 5} IE</div>
           ))}
           {nextCalmMilestone && (
             <div className="shrink-0 rounded-full px-3.5 py-2 text-xs font-bold flex items-center gap-1.5" style={{ color: C.inkFaint, border: `1px dashed ${C.border}` }}><Lock size={12} /> {nextCalmMilestone.days}d · {nextCalmMilestone.name}</div>
@@ -828,7 +834,7 @@ function HomeTab({ lvl, overallCalmMs, overallCalmDays, personStreak, calmMilest
       </div>
 
       <div className="rounded-2xl p-4 mb-5 grid grid-cols-3 text-center" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
-        <div><div className="font-display text-xl font-extrabold" style={{ color: C.eq }}>{eqs.length}</div><div className="text-[11px] uppercase tracking-wide mt-0.5" style={{ color: C.inkSoft }}>total EQ</div></div>
+        <div><div className="font-display text-xl font-extrabold" style={{ color: C.eq }}>{eqs.length}</div><div className="text-[11px] uppercase tracking-wide mt-0.5" style={{ color: C.inkSoft }}>total IE</div></div>
         <div><div className="font-display text-xl font-extrabold" style={{ color: C.eq }}>{eq7}</div><div className="text-[11px] uppercase tracking-wide mt-0.5" style={{ color: C.inkSoft }}>7 días</div></div>
         <div><div className="font-display text-xl font-extrabold" style={{ color: C.eq }}>{eq30}</div><div className="text-[11px] uppercase tracking-wide mt-0.5" style={{ color: C.inkSoft }}>30 días</div></div>
       </div>
@@ -859,7 +865,7 @@ function LogTab({ grouped, filter, setFilter, onDelete, onClose, onEdit, isEmpty
   const filters = [
     { id: "todos", label: "Todos" },
     { id: "episode", label: "Ira" },
-    { id: "eq", label: "EQ" },
+    { id: "eq", label: "IE" },
     { id: "trigger", label: "Detonantes" },
     { id: "joy", label: "Felicidad" },
   ];
@@ -1178,7 +1184,7 @@ function StatsTab({ episodes, eqs, joys, triggers, topGaps, calmMilestonesAchiev
     <div>
       <h2 className="font-display text-2xl font-extrabold mb-4" style={{ color: C.ink }}>Estadísticas</h2>
       <div className="grid grid-cols-4 gap-2 mb-6">
-        {[["episodios", episodes.length, C.episode], ["EQ", eqs.length, C.eq], ["detonantes", triggers.length, C.trigger], ["felicidad", joys.length, C.joy]].map(([label, val, color]) => (
+        {[["episodios", episodes.length, C.episode], ["IE", eqs.length, C.eq], ["detonantes", triggers.length, C.trigger], ["felicidad", joys.length, C.joy]].map(([label, val, color]) => (
           <div key={label} className="rounded-2xl p-2.5 text-center" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
             <div className="font-display text-lg font-extrabold" style={{ color }}>{val}</div>
             <div className="text-[10px] uppercase" style={{ color: C.inkSoft }}>{label}</div>
@@ -1216,7 +1222,7 @@ function StatsTab({ episodes, eqs, joys, triggers, topGaps, calmMilestonesAchiev
         ) : (
           <div className="flex gap-2 flex-wrap">
             {calmMilestonesAchieved.map((m) => <div key={`c${m}`} className="rounded-full px-3 py-1.5 text-[11px] font-extrabold flex items-center gap-1" style={{ background: C.accent, color: "#fff" }}><Award size={11} /> {m}d</div>)}
-            {Array.from({ length: eqMilestonesAchieved }).map((_, i) => <div key={`e${i}`} className="rounded-full px-3 py-1.5 text-[11px] font-extrabold flex items-center gap-1" style={{ background: C.eq, color: "#fff" }}><Award size={11} /> {(i + 1) * 5} EQ</div>)}
+            {Array.from({ length: eqMilestonesAchieved }).map((_, i) => <div key={`e${i}`} className="rounded-full px-3 py-1.5 text-[11px] font-extrabold flex items-center gap-1" style={{ background: C.eq, color: "#fff" }}><Award size={11} /> {(i + 1) * 5} IE</div>)}
           </div>
         )}
       </SectionCard>
