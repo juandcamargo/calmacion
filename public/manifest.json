@@ -1,0 +1,14 @@
+{
+  "name": "Calmación",
+  "short_name": "Calmación",
+  "description": "Bitácora personal de regulación emocional",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#F6F8F7",
+  "theme_color": "#0FA06E",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
