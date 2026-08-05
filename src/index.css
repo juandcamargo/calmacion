@@ -6,3 +6,9 @@
 
 html, body, #root { height: 100%; margin: 0; }
 .font-display { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+/* iOS Safari auto-zooms the whole page when a focused input's font-size is
+   under 16px. The viewport meta tag disables pinch/double-tap zoom, but not
+   this one — so every text field needs to render at 16px+ regardless of the
+   text-sm utility class applied to it. */
+input, textarea, select { font-size: 16px !important; }
