@@ -15,6 +15,7 @@ export const C = {
   eq: "#CB9A22", eqBg: "#FAF1D6",
   trigger: "#6E8CAE", triggerBg: "#E8EEF4",
   joy: "#CE5F8D", joyBg: "#FAEAF1",
+  falsealarm: "#8B7FD1", falsealarmBg: "#EEEAFA",
 };
 
 /* ---------------- brand mark (minimalist lotus monk) ---------------- */

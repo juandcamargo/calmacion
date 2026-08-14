@@ -3,7 +3,7 @@ import {
   Flame, Sparkles, Sun, Zap, X, Trash2, Award, ChevronRight,
   MapPin, Clock, CheckCircle2, Info, BarChart3, Lock,
   Settings, Download, Upload, AlertTriangle, Loader2,
-  Home, ListTree, Plus, LifeBuoy, Filter, Pencil, LogOut,
+  Home, ListTree, Plus, LifeBuoy, Filter, Pencil, LogOut, Siren,
 } from "lucide-react";
 import { supabase } from "./lib/supabaseClient";
 import { C, MonkMark } from "./theme.jsx";
@@ -418,6 +418,7 @@ function Calma({ session }) {
   const eqs = useMemo(() => entries.filter((e) => e.type === "eq"), [entries]);
   const joys = useMemo(() => entries.filter((e) => e.type === "joy"), [entries]);
   const triggers = useMemo(() => entries.filter((e) => e.type === "trigger"), [entries]);
+  const falseAlarms = useMemo(() => entries.filter((e) => e.type === "falsealarm"), [entries]);
   const openEpisodes = useMemo(() => episodes.filter((e) => !e.closed), [episodes]);
   const now = new Date();
 
@@ -441,6 +442,7 @@ function Calma({ session }) {
   const calmMilestonesAchieved = LEVELS.filter((l) => l.days > 0 && maxGapDays >= l.days).map((l) => l.days);
   const nextCalmMilestone = LEVELS.find((l) => l.days > 0 && maxGapDays < l.days);
   const eqMilestonesAchieved = Math.floor(eqs.length / 5);
+  const falseAlarmMilestonesAchieved = Math.floor(falseAlarms.length / 5);
 
   const lvl = useMemo(() => levelInfo(overallCalmDays), [overallCalmDays]);
 
@@ -533,6 +535,7 @@ function Calma({ session }) {
           <HomeTab
             lvl={lvl} overallCalmMs={overallCalmMs} overallCalmDays={overallCalmDays} personStreak={personStreak}
             calmMilestonesAchieved={calmMilestonesAchieved} eqMilestonesAchieved={eqMilestonesAchieved} nextCalmMilestone={nextCalmMilestone}
+            falseAlarmMilestonesAchieved={falseAlarmMilestonesAchieved}
             eqs={eqs} eq7={eq7} eq30={eq30} timeline={timeline} onSeeAll={() => setTab("log")}
             onEdit={(entry) => setModal({ type: entry.type, editEntry: entry })}
           />
@@ -546,7 +549,7 @@ function Calma({ session }) {
           />
         )}
         {tab === "stats" && (
-          <StatsTab episodes={episodes} eqs={eqs} joys={joys} triggers={triggers} topGaps={topGaps} calmMilestonesAchieved={calmMilestonesAchieved} eqMilestonesAchieved={eqMilestonesAchieved} overallCalmMs={overallCalmMs} personStreak={personStreak} />
+          <StatsTab episodes={episodes} eqs={eqs} joys={joys} triggers={triggers} falseAlarms={falseAlarms} topGaps={topGaps} calmMilestonesAchieved={calmMilestonesAchieved} eqMilestonesAchieved={eqMilestonesAchieved} falseAlarmMilestonesAchieved={falseAlarmMilestonesAchieved} overallCalmMs={overallCalmMs} personStreak={personStreak} />
         )}
       </div>
 
@@ -591,6 +594,14 @@ function Calma({ session }) {
       )}
       {(modal === "trigger" || (modal && modal.type === "trigger")) && (
         <TriggerModal
+          onCancel={() => setModal(null)}
+          onSave={modal && modal.editEntry ? (patch) => updateEntry(modal.editEntry.id, patch) : addEntry}
+          saving={saving}
+          editEntry={modal && modal.editEntry}
+        />
+      )}
+      {(modal === "falsealarm" || (modal && modal.type === "falsealarm")) && (
+        <FalseAlarmModal
           onCancel={() => setModal(null)}
           onSave={modal && modal.editEntry ? (patch) => updateEntry(modal.editEntry.id, patch) : addEntry}
           saving={saving}
@@ -663,6 +674,7 @@ function QuickAddSheet({ onPick, onClose }) {
     { type: "eq", label: "Inteligencia emocional", sub: "Casi te detona y lo manejaste", icon: Sparkles, color: C.eq, bg: C.eqBg },
     { type: "trigger", label: "Pequeño detonante", sub: "Molestó, pero no escaló", icon: Zap, color: C.trigger, bg: C.triggerBg },
     { type: "joy", label: "Felicidad", sub: "Un momento que te alegró", icon: Sun, color: C.joy, bg: C.joyBg },
+    { type: "falsealarm", label: "Falsa Alarma", sub: "Algo pequeño que no debería molestarte", icon: Siren, color: C.falsealarm, bg: C.falsealarmBg },
   ];
   return (
     <div className={closing ? "fade-out" : "fade-in"} style={{ position: "fixed", inset: 0, display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 50, background: "rgba(20,27,23,0.45)" }} onClick={handleClose}>
@@ -791,7 +803,7 @@ function CatalizadorModal({ onClose, eqs, personStreak, onLogEq, onLogEpisode })
   );
 }
 
-function HomeTab({ lvl, overallCalmMs, overallCalmDays, personStreak, calmMilestonesAchieved, eqMilestonesAchieved, nextCalmMilestone, eqs, eq7, eq30, timeline, onSeeAll, onEdit }) {
+function HomeTab({ lvl, overallCalmMs, overallCalmDays, personStreak, calmMilestonesAchieved, eqMilestonesAchieved, falseAlarmMilestonesAchieved, nextCalmMilestone, eqs, eq7, eq30, timeline, onSeeAll, onEdit }) {
   const daysDisplay = useCountUp(overallCalmDays);
   const pct = Math.round(lvl.progress * 100);
   return (
@@ -830,6 +842,9 @@ function HomeTab({ lvl, overallCalmMs, overallCalmDays, personStreak, calmMilest
           ))}
           {Array.from({ length: eqMilestonesAchieved }).map((_, i) => (
             <div key={`e${i}`} className="pop-in shrink-0 rounded-full px-3.5 py-2 text-xs font-extrabold flex items-center gap-1.5" style={{ background: C.eq, color: "#fff" }}><Award size={13} /> {(i + 1) * 5} IE</div>
+          ))}
+          {Array.from({ length: falseAlarmMilestonesAchieved }).map((_, i) => (
+            <div key={`f${i}`} className="pop-in shrink-0 rounded-full px-3.5 py-2 text-xs font-extrabold flex items-center gap-1.5" style={{ background: C.falsealarm, color: "#fff" }}><Award size={13} /> {(i + 1) * 5} FA</div>
           ))}
           {nextCalmMilestone && (
             <div className="shrink-0 rounded-full px-3.5 py-2 text-xs font-bold flex items-center gap-1.5" style={{ color: C.inkFaint, border: `1px dashed ${C.border}` }}><Lock size={12} /> {nextCalmMilestone.days}d · {nextCalmMilestone.name}</div>
@@ -872,8 +887,9 @@ function LogTab({ grouped, filter, setFilter, onDelete, onClose, onEdit, isEmpty
     { id: "eq", label: "IE" },
     { id: "trigger", label: "Detonantes" },
     { id: "joy", label: "Felicidad" },
+    { id: "falsealarm", label: "Falsa Alarma" },
   ];
-  const colorFor = { todos: C.accent, episode: C.episode, eq: C.eq, trigger: C.trigger, joy: C.joy };
+  const colorFor = { todos: C.accent, episode: C.episode, eq: C.eq, trigger: C.trigger, joy: C.joy, falsealarm: C.falsealarm };
   return (
     <div>
       <div className="flex items-center gap-1.5 mb-4">
@@ -913,6 +929,7 @@ function EntryCard({ entry, onDelete, onClose, onEdit, readOnly }) {
     eq: { icon: Sparkles, color: C.eq, bg: C.eqBg, title: whoDisplay(entry.who, entry.contextDetail), label: "Inteligencia emocional" },
     joy: { icon: Sun, color: C.joy, bg: C.joyBg, title: "Momento feliz", label: "Felicidad" },
     trigger: { icon: Zap, color: C.trigger, bg: C.triggerBg, title: entry.place || "Pequeño detonante", label: "Pequeño detonante" },
+    falsealarm: { icon: Siren, color: C.falsealarm, bg: C.falsealarmBg, title: whoDisplay(entry.who, entry.contextDetail), label: "Falsa Alarma" },
   }[entry.type];
   const Icon = meta.icon;
   return (
@@ -933,12 +950,15 @@ function EntryCard({ entry, onDelete, onClose, onEdit, readOnly }) {
           {entry.description && <p className="text-xs mt-1" style={{ color: C.ink }}>{entry.description}</p>}
           {entry.note && <p className="text-xs mt-1 italic" style={{ color: C.inkSoft }}>"{entry.note}"</p>}
           {entry.management && <p className="text-xs mt-1 italic" style={{ color: C.inkSoft }}>"{entry.management}"</p>}
+          {entry.resolution && <p className="text-xs mt-1 italic" style={{ color: C.inkSoft }}>"{entry.resolution}"</p>}
           <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-1.5 text-[11px] uppercase tracking-wide" style={{ color: C.inkSoft }}>
             <span className="flex items-center gap-0.5"><Clock size={10} /> {formatTime(entry.date)}</span>
             {entry.place && entry.type !== "trigger" && <span className="flex items-center gap-0.5"><MapPin size={10} /> {entry.place}</span>}
             {entry.intensity && <span>intensidad {entry.intensity}/5</span>}
             {entry.happiness && <span>nivel {entry.happiness}/5</span>}
             {entry.annoyance && <span>molestia {entry.annoyance}/5</span>}
+            {entry.discomfort && <span>incomodidad {entry.discomfort}/5</span>}
+            {entry.type === "falsealarm" && <span>{entry.resolvedInternally ? "resuelta internamente" : "sin resolver"}</span>}
             {entry.fault && <span>culpa: {entry.fault}</span>}
             {entry.tool && <span>herramienta: {entry.tool === "Otro" ? entry.toolDetail || "Otro" : entry.tool}</span>}
           </div>
@@ -1107,6 +1127,45 @@ function TriggerModal({ onCancel, onSave, saving, editEntry }) {
   );
 }
 
+function FalseAlarmModal({ onCancel, onSave, saving, editEntry }) {
+  const [date, setDate] = useState(toLocalInputValue(editEntry ? editEntry.date : new Date()));
+  const [who, setWho] = useState((editEntry && editEntry.who) || "");
+  const [whoDetail, setWhoDetail] = useState((editEntry && editEntry.contextDetail) || "");
+  const [discomfort, setDiscomfort] = useState((editEntry && editEntry.discomfort) || 2);
+  const [description, setDescription] = useState((editEntry && editEntry.description) || "");
+  const [resolvedInternally, setResolvedInternally] = useState(editEntry ? !!editEntry.resolvedInternally : null);
+  const [resolution, setResolution] = useState((editEntry && editEntry.resolution) || "");
+  const canSave = who && description.trim() && resolvedInternally !== null && date;
+  return (
+    <ModalShell title={editEntry ? "Editar falsa alarma" : "Falsa Alarma"} icon={<Siren size={18} color={C.falsealarm} />} onCancel={onCancel}>
+      <Field label="Fecha y hora"><input type="datetime-local" value={date} onChange={(e) => setDate(e.target.value)} className="w-full px-3 py-2.5 text-sm" style={inputStyle} /></Field>
+      <Field label="¿Quién detonó la falsa alarma?"><WhoPicker value={who} detail={whoDetail} onChange={setWho} onDetailChange={setWhoDetail} color={C.falsealarm} /></Field>
+      <Field label={`Nivel de incomodidad: ${discomfort}/5`}><input type="range" min="1" max="5" value={discomfort} onChange={(e) => setDiscomfort(Number(e.target.value))} className="w-full" style={{ accentColor: C.falsealarm }} /></Field>
+      <Field label="¿Qué pasó?"><textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className="w-full px-3 py-2.5 text-sm resize-none" style={inputStyle} /></Field>
+      <Field label="¿La resolviste internamente?">
+        <div className="flex gap-2 flex-wrap">
+          <Chip label="Sí" active={resolvedInternally === true} onClick={() => setResolvedInternally(true)} color={C.falsealarm} />
+          <Chip label="No" active={resolvedInternally === false} onClick={() => setResolvedInternally(false)} color={C.falsealarm} />
+        </div>
+      </Field>
+      {resolvedInternally === true && (
+        <Field label="¿Cómo la resolviste?"><textarea value={resolution} onChange={(e) => setResolution(e.target.value)} rows={2} className="w-full px-3 py-2.5 text-sm resize-none" style={inputStyle} /></Field>
+      )}
+      <SaveButton
+        disabled={!canSave}
+        saving={saving}
+        color={C.falsealarm}
+        onClick={() => onSave(editEntry
+          ? { ...editEntry, date: new Date(date).toISOString(), who, contextDetail: whoDetail, discomfort, description, resolvedInternally, resolution: resolvedInternally ? resolution : "" }
+          : { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, type: "falsealarm", date: new Date(date).toISOString(), who, contextDetail: whoDetail, discomfort, description, resolvedInternally, resolution: resolvedInternally ? resolution : "" }
+        )}
+      >
+        {editEntry ? "Guardar cambios" : "Guardar falsa alarma"}
+      </SaveButton>
+    </ModalShell>
+  );
+}
+
 function JoyModal({ onCancel, onSave, saving, editEntry }) {
   const [date, setDate] = useState(toLocalInputValue(editEntry ? editEntry.date : new Date()));
   const [place, setPlace] = useState((editEntry && editEntry.place) || "");
@@ -1164,19 +1223,24 @@ function StatBar({ label, value, max, color }) {
   );
 }
 
-function StatsTab({ episodes, eqs, joys, triggers, topGaps, calmMilestonesAchieved, eqMilestonesAchieved, overallCalmMs, personStreak }) {
+function StatsTab({ episodes, eqs, joys, triggers, falseAlarms, topGaps, calmMilestonesAchieved, eqMilestonesAchieved, falseAlarmMilestonesAchieved, overallCalmMs, personStreak }) {
   const totalFault = episodes.reduce((acc, e) => (e.fault ? acc + 1 : acc), 0);
   const faultCounts = useMemo(() => { const c = { Mía: 0, "De la otra persona": 0, Compartida: 0 }; episodes.forEach((e) => { if (e.fault) c[e.fault] = (c[e.fault] || 0) + 1; }); return c; }, [episodes]);
   const byWhoCounts = useMemo(() => { const c = {}; WHO_OPTIONS.forEach((w) => (c[w] = 0)); episodes.forEach((e) => (c[e.who] = (c[e.who] || 0) + 1)); return c; }, [episodes]);
   const maxWho = Math.max(1, ...Object.values(byWhoCounts));
+  const falseAlarmByWhoCounts = useMemo(() => { const c = {}; WHO_OPTIONS.forEach((w) => (c[w] = 0)); falseAlarms.forEach((e) => (c[e.who] = (c[e.who] || 0) + 1)); return c; }, [falseAlarms]);
+  const maxFalseAlarmWho = Math.max(1, ...Object.values(falseAlarmByWhoCounts));
   const avgIntensity = episodes.length ? (episodes.reduce((s, e) => s + (e.intensity || 0), 0) / episodes.length).toFixed(1) : "0.0";
   const avgAnnoyance = triggers.length ? (triggers.reduce((s, e) => s + (e.annoyance || 0), 0) / triggers.length).toFixed(1) : "0.0";
   const avgHappiness = joys.length ? (joys.reduce((s, e) => s + (e.happiness || 0), 0) / joys.length).toFixed(1) : "0.0";
+  const avgDiscomfort = falseAlarms.length ? (falseAlarms.reduce((s, e) => s + (e.discomfort || 0), 0) / falseAlarms.length).toFixed(1) : "0.0";
   const now = new Date();
   const trig7 = triggers.filter((e) => msBetween(e.date, now) <= 7 * 86400000).length;
   const trig30 = triggers.filter((e) => msBetween(e.date, now) <= 30 * 86400000).length;
   const joy7 = joys.filter((e) => msBetween(e.date, now) <= 7 * 86400000).length;
   const joy30 = joys.filter((e) => msBetween(e.date, now) <= 30 * 86400000).length;
+  const fa7 = falseAlarms.filter((e) => msBetween(e.date, now) <= 7 * 86400000).length;
+  const fa30 = falseAlarms.filter((e) => msBetween(e.date, now) <= 30 * 86400000).length;
   const periodCounts = useMemo(() => { const c = { Madrugada: 0, Mañana: 0, Tarde: 0, Noche: 0 }; [...episodes, ...triggers].forEach((e) => { c[periodOfHour(new Date(e.date).getHours())]++; }); return c; }, [episodes, triggers]);
   const maxPeriod = Math.max(1, ...Object.values(periodCounts));
   const placeCounts = useMemo(() => { const c = {}; [...episodes, ...triggers, ...joys].forEach((e) => { if (e.place) c[e.place] = (c[e.place] || 0) + 1; }); return Object.entries(c).sort((a, b) => b[1] - a[1]).slice(0, 6); }, [episodes, triggers, joys]);
@@ -1187,8 +1251,8 @@ function StatsTab({ episodes, eqs, joys, triggers, topGaps, calmMilestonesAchiev
   return (
     <div>
       <h2 className="font-display text-2xl font-extrabold mb-4" style={{ color: C.ink }}>Estadísticas</h2>
-      <div className="grid grid-cols-4 gap-2 mb-6">
-        {[["episodios", episodes.length, C.episode], ["IE", eqs.length, C.eq], ["detonantes", triggers.length, C.trigger], ["felicidad", joys.length, C.joy]].map(([label, val, color]) => (
+      <div className="grid grid-cols-3 gap-2 mb-6">
+        {[["episodios", episodes.length, C.episode], ["IE", eqs.length, C.eq], ["detonantes", triggers.length, C.trigger], ["felicidad", joys.length, C.joy], ["falsas alarmas", falseAlarms.length, C.falsealarm]].map(([label, val, color]) => (
           <div key={label} className="rounded-2xl p-2.5 text-center" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
             <div className="font-display text-lg font-extrabold" style={{ color }}>{val}</div>
             <div className="text-[10px] uppercase" style={{ color: C.inkSoft }}>{label}</div>
@@ -1221,17 +1285,22 @@ function StatsTab({ episodes, eqs, joys, triggers, topGaps, calmMilestonesAchiev
       </SectionCard>
 
       <SectionCard title="Medallas">
-        {calmMilestonesAchieved.length === 0 && eqMilestonesAchieved === 0 ? (
+        {calmMilestonesAchieved.length === 0 && eqMilestonesAchieved === 0 && falseAlarmMilestonesAchieved === 0 ? (
           <p className="text-xs" style={{ color: C.inkSoft }}>Aún no tienes medallas — ¡vas por la primera!</p>
         ) : (
           <div className="flex gap-2 flex-wrap">
             {calmMilestonesAchieved.map((m) => <div key={`c${m}`} className="rounded-full px-3 py-1.5 text-[11px] font-extrabold flex items-center gap-1" style={{ background: C.accent, color: "#fff" }}><Award size={11} /> {m}d</div>)}
             {Array.from({ length: eqMilestonesAchieved }).map((_, i) => <div key={`e${i}`} className="rounded-full px-3 py-1.5 text-[11px] font-extrabold flex items-center gap-1" style={{ background: C.eq, color: "#fff" }}><Award size={11} /> {(i + 1) * 5} IE</div>)}
+            {Array.from({ length: falseAlarmMilestonesAchieved }).map((_, i) => <div key={`f${i}`} className="rounded-full px-3 py-1.5 text-[11px] font-extrabold flex items-center gap-1" style={{ background: C.falsealarm, color: "#fff" }}><Award size={11} /> {(i + 1) * 5} FA</div>)}
           </div>
         )}
       </SectionCard>
 
       <SectionCard title="¿Con quién peleo más?">{WHO_OPTIONS.map((w) => <StatBar key={w} label={w} value={byWhoCounts[w] || 0} max={maxWho} color={C.episode} />)}</SectionCard>
+
+      <SectionCard title="¿Quién detona más falsas alarmas?">
+        {falseAlarms.length === 0 ? <p className="text-xs" style={{ color: C.inkSoft }}>Aún no hay suficientes datos.</p> : WHO_OPTIONS.map((w) => <StatBar key={w} label={w} value={falseAlarmByWhoCounts[w] || 0} max={maxFalseAlarmWho} color={C.falsealarm} />)}
+      </SectionCard>
 
       <SectionCard title="¿Quién inicia?">
         {totalFault === 0 ? <p className="text-xs" style={{ color: C.inkSoft }}>Aún no hay suficientes datos.</p> : Object.entries(faultCounts).map(([k, v]) => <StatBar key={k} label={k} value={`${Math.round((v / totalFault) * 100)}%`} max={100} color={C.accent} />)}
@@ -1242,6 +1311,14 @@ function StatsTab({ episodes, eqs, joys, triggers, topGaps, calmMilestonesAchiev
           <div><div className="font-display text-lg font-extrabold" style={{ color: C.trigger }}>{trig7}</div><div className="text-[10px] uppercase" style={{ color: C.inkSoft }}>7 días</div></div>
           <div><div className="font-display text-lg font-extrabold" style={{ color: C.trigger }}>{trig30}</div><div className="text-[10px] uppercase" style={{ color: C.inkSoft }}>30 días</div></div>
           <div><div className="font-display text-lg font-extrabold" style={{ color: C.trigger }}>{avgAnnoyance}</div><div className="text-[10px] uppercase" style={{ color: C.inkSoft }}>molestia prom.</div></div>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Falsas alarmas">
+        <div className="grid grid-cols-3 text-center mb-1">
+          <div><div className="font-display text-lg font-extrabold" style={{ color: C.falsealarm }}>{fa7}</div><div className="text-[10px] uppercase" style={{ color: C.inkSoft }}>7 días</div></div>
+          <div><div className="font-display text-lg font-extrabold" style={{ color: C.falsealarm }}>{fa30}</div><div className="text-[10px] uppercase" style={{ color: C.inkSoft }}>30 días</div></div>
+          <div><div className="font-display text-lg font-extrabold" style={{ color: C.falsealarm }}>{avgDiscomfort}</div><div className="text-[10px] uppercase" style={{ color: C.inkSoft }}>incomodidad prom.</div></div>
         </div>
       </SectionCard>
 
