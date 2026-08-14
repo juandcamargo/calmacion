@@ -474,10 +474,10 @@ function Calma({ session }) {
   }
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "'Gilroy', sans-serif", position: "relative" }}>
+    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "'Circular Spotify Text', sans-serif", position: "relative" }}>
       <style>{`
         :root { --ease-out: cubic-bezier(0.23, 1, 0.32, 1); --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1); --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1); }
-        .font-display { font-family: 'Gilroy', sans-serif; }
+        .font-display { font-family: 'Circular Spotify Text', sans-serif; }
         @keyframes breathe {
           0%, 100% { transform: scale(1, 1) rotate(0deg); }
           25% { transform: scale(1.045, 0.965) rotate(-1.5deg); }
