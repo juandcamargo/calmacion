@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
-  Flame, Sparkles, Sun, Zap, X, Trash2, Award, ChevronRight,
+  Flame, Sparkles, Sun, Zap, X, Trash2, Award, ChevronRight, ChevronLeft,
   MapPin, Clock, CheckCircle2, Info, BarChart3, Lock,
   Settings, Download, Upload, AlertTriangle, Loader2,
   Home, ListTree, Plus, LifeBuoy, Filter, Pencil, LogOut, Siren,
+  Heart, Briefcase, Users, Baby, CalendarDays,
 } from "lucide-react";
 import { supabase } from "./lib/supabaseClient";
 import { C, MonkMark } from "./theme.jsx";
@@ -11,6 +12,8 @@ import Auth from "./Auth.jsx";
 
 const WHO_OPTIONS = ["Jen", "Trabajo", "Otros", "Salvador"];
 const DISPLAY_WHO = { Jen: "Con Jen", Trabajo: "Por el Trabajo", Otros: "Por Otros", Salvador: "Con Salvador" };
+const WHO_ICONS = { Jen: Heart, Trabajo: Briefcase, Otros: Users, Salvador: Baby };
+const WEEKDAY_LETTERS = ["D", "L", "M", "X", "J", "V", "S"]; // index = Date#getDay(), 0 = Sunday
 const FAULT_OPTIONS = ["Mía", "De la otra persona", "Compartida"];
 const RESOLUTION_OPTIONS = ["Se disculparon conmigo", "Me disculpé", "Lo superé"];
 const TOOL_OPTIONS = ["Sándwich", "Tiempo Fuera", "Otro", "Sin herramientas"];
@@ -89,6 +92,22 @@ function periodOfHour(h) {
 }
 function prefersReducedMotion() {
   return typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/* ---------------- day coloring (home strip + calendar) ----------------
+   When a day has more than one entry type, the "worst" one wins so the
+   color stays a fast, at-a-glance signal: an angry day should read as
+   angry even if something happy also happened that day. */
+const DAY_COLOR_PRIORITY = ["episode", "trigger", "falsealarm", "joy"];
+function sameLocalDay(a, b) {
+  return new Date(a).toDateString() === new Date(b).toDateString();
+}
+function entriesForDay(entries, day) {
+  return entries.filter((e) => sameLocalDay(e.date, day));
+}
+function dominantEntryType(dayEntries) {
+  for (const t of DAY_COLOR_PRIORITY) if (dayEntries.some((e) => e.type === t)) return t;
+  return null;
 }
 
 /* ---------------- Supabase row <-> entry mapping ----------------
@@ -248,6 +267,33 @@ function SectionCard({ title, icon, children }) {
   );
 }
 
+/* ---------------- day chip (home strip + calendar) ---------------- */
+
+function DayChip({ date, type, onClick, muted, size = 38 }) {
+  const colorMap = { episode: C.episode, trigger: C.trigger, falsealarm: C.falsealarm, joy: C.joy };
+  const color = type ? colorMap[type] : null;
+  const dayNum = new Date(date).getDate();
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={!onClick}
+      className="rounded-full flex items-center justify-center font-display font-extrabold shrink-0"
+      style={{
+        width: size, height: size,
+        background: color || C.surfaceMuted,
+        color: color ? "#fff" : muted ? C.inkFaint : C.inkSoft,
+        border: color ? "none" : `1px dashed ${C.border}`,
+        fontSize: size < 36 ? 11 : 13,
+        opacity: muted ? 0.45 : 1,
+        cursor: onClick ? "pointer" : "default",
+      }}
+    >
+      {dayNum}
+    </button>
+  );
+}
+
 /* ---------------- root: auth gate ---------------- */
 
 export default function AppRoot() {
@@ -282,6 +328,7 @@ function Calma({ session }) {
   const [lastSeenLevel, setLastSeenLevel] = useState(null);
   const [tab, setTab] = useState("home");
   const [modal, setModal] = useState(null);
+  const [dayDetail, setDayDetail] = useState(null);
   const [quickAdd, setQuickAdd] = useState(false);
   const [catalizador, setCatalizador] = useState(false);
   const [levelUp, setLevelUp] = useState(null);
@@ -541,10 +588,10 @@ function Calma({ session }) {
         {tab === "home" && (
           <HomeTab
             lvl={lvl} overallCalmMs={overallCalmMs} overallCalmDays={overallCalmDays} personStreak={personStreak}
-            calmMilestonesAchieved={calmMilestonesAchieved} eqMilestonesAchieved={eqMilestonesAchieved} nextCalmMilestone={nextCalmMilestone}
-            falseAlarmMilestonesAchieved={falseAlarmMilestonesAchieved}
+            entries={entries}
             eqs={eqs} eq7={eq7} eq30={eq30} timeline={timeline} onSeeAll={() => setTab("log")}
             onEdit={(entry) => setModal({ type: entry.type, editEntry: entry })}
+            onSelectDay={setDayDetail}
           />
         )}
         {tab === "log" && (
@@ -556,7 +603,7 @@ function Calma({ session }) {
           />
         )}
         {tab === "stats" && (
-          <StatsTab episodes={episodes} eqs={eqs} joys={joys} triggers={triggers} falseAlarms={falseAlarms} topGaps={topGaps} calmMilestonesAchieved={calmMilestonesAchieved} eqMilestonesAchieved={eqMilestonesAchieved} falseAlarmMilestonesAchieved={falseAlarmMilestonesAchieved} overallCalmMs={overallCalmMs} personStreak={personStreak} />
+          <StatsTab episodes={episodes} eqs={eqs} joys={joys} triggers={triggers} falseAlarms={falseAlarms} entries={entries} topGaps={topGaps} calmMilestonesAchieved={calmMilestonesAchieved} eqMilestonesAchieved={eqMilestonesAchieved} falseAlarmMilestonesAchieved={falseAlarmMilestonesAchieved} overallCalmMs={overallCalmMs} personStreak={personStreak} onSelectDay={setDayDetail} />
         )}
       </div>
 
@@ -628,6 +675,16 @@ function Calma({ session }) {
         />
       )}
       {modal && modal.closeId && <CloseModal onCancel={() => setModal(null)} onSave={(c) => closeEpisode(modal.closeId, c)} saving={saving} />}
+      {dayDetail && (
+        <DayDetailModal
+          date={dayDetail}
+          entries={entriesForDay(entries, dayDetail)}
+          onClose={() => setDayDetail(null)}
+          onEdit={(entry) => { setDayDetail(null); setModal({ type: entry.type, editEntry: entry }); }}
+          onDelete={deleteEntry}
+          onCloseEpisode={(id) => { setDayDetail(null); setModal({ closeId: id }); }}
+        />
+      )}
 
       {levelUp && <LevelUpModal info={levelUp} onClose={() => setLevelUp(null)} />}
     </div>
@@ -810,9 +867,18 @@ function CatalizadorModal({ onClose, eqs, personStreak, onLogEq, onLogEpisode })
   );
 }
 
-function HomeTab({ lvl, overallCalmMs, overallCalmDays, personStreak, calmMilestonesAchieved, eqMilestonesAchieved, falseAlarmMilestonesAchieved, nextCalmMilestone, eqs, eq7, eq30, timeline, onSeeAll, onEdit }) {
+function HomeTab({ lvl, overallCalmMs, overallCalmDays, personStreak, entries, eqs, eq7, eq30, timeline, onSeeAll, onEdit, onSelectDay }) {
   const daysDisplay = useCountUp(overallCalmDays);
   const pct = Math.round(lvl.progress * 100);
+  const last7Days = useMemo(() => {
+    const today = new Date();
+    return Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() - (6 - i));
+      const dayEntries = entriesForDay(entries, d);
+      return { date: d, type: dominantEntryType(dayEntries), count: dayEntries.length };
+    });
+  }, [entries]);
   return (
     <div>
       <div className="rounded-[26px] p-6 mb-5 text-center relative overflow-hidden" style={{ background: `linear-gradient(160deg, ${C.accentBg}, ${C.surface})`, border: `1px solid ${C.border}` }}>
@@ -833,29 +899,31 @@ function HomeTab({ lvl, overallCalmMs, overallCalmDays, personStreak, calmMilest
       </div>
 
       <div className="grid grid-cols-2 gap-2 mb-5">
-        {WHO_OPTIONS.map((who) => (
-          <div key={who} className="rounded-2xl p-3 text-center" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
-            <div className="text-xs font-extrabold" style={{ color: C.ink }}>{DISPLAY_WHO[who]}</div>
-            <div className="text-[11px] mt-0.5" style={{ color: C.inkSoft }}>{formatDHM(personStreak(who))}</div>
-          </div>
-        ))}
+        {WHO_OPTIONS.map((who) => {
+          const Icon = WHO_ICONS[who];
+          return (
+            <div key={who} className="rounded-2xl p-3 flex items-center gap-2.5" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
+              <div className="rounded-full flex items-center justify-center shrink-0" style={{ width: 34, height: 34, background: C.accentBg }}>
+                <Icon size={16} color={C.accentDeep} />
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs font-extrabold truncate" style={{ color: C.ink }}>{DISPLAY_WHO[who]}</div>
+                <div className="text-[11px] mt-0.5" style={{ color: C.inkSoft }}>{formatDHM(personStreak(who))}</div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <div className="mb-5">
-        <h2 className="font-display text-sm font-extrabold mb-2 flex items-center gap-1.5" style={{ color: C.ink }}><Award size={15} color={C.eq} /> Logros</h2>
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {calmMilestonesAchieved.map((m) => (
-            <div key={`c${m}`} className="pop-in shrink-0 rounded-full px-3.5 py-2 text-xs font-extrabold flex items-center gap-1.5" style={{ background: C.accent, color: "#fff" }}><Award size={13} /> {m}d en calma</div>
+        <h2 className="font-display text-sm font-extrabold mb-2" style={{ color: C.ink }}>Últimos 7 días</h2>
+        <div className="rounded-2xl p-3 flex justify-between" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
+          {last7Days.map((d) => (
+            <div key={d.date.toDateString()} className="flex flex-col items-center gap-1.5">
+              <span className="text-[10px] font-bold uppercase" style={{ color: C.inkFaint }}>{WEEKDAY_LETTERS[d.date.getDay()]}</span>
+              <DayChip date={d.date} type={d.type} onClick={() => onSelectDay(d.date)} />
+            </div>
           ))}
-          {Array.from({ length: eqMilestonesAchieved }).map((_, i) => (
-            <div key={`e${i}`} className="pop-in shrink-0 rounded-full px-3.5 py-2 text-xs font-extrabold flex items-center gap-1.5" style={{ background: C.eq, color: "#fff" }}><Award size={13} /> {(i + 1) * 5} IE</div>
-          ))}
-          {Array.from({ length: falseAlarmMilestonesAchieved }).map((_, i) => (
-            <div key={`f${i}`} className="pop-in shrink-0 rounded-full px-3.5 py-2 text-xs font-extrabold flex items-center gap-1.5" style={{ background: C.falsealarm, color: "#fff" }}><Award size={13} /> {(i + 1) * 5} FA</div>
-          ))}
-          {nextCalmMilestone && (
-            <div className="shrink-0 rounded-full px-3.5 py-2 text-xs font-bold flex items-center gap-1.5" style={{ color: C.inkFaint, border: `1px dashed ${C.border}` }}><Lock size={12} /> {nextCalmMilestone.days}d · {nextCalmMilestone.name}</div>
-          )}
         </div>
       </div>
 
@@ -1217,6 +1285,24 @@ function CloseModal({ onCancel, onSave, saving }) {
   );
 }
 
+/* ---------------- day detail (from the home strip / calendar) ---------------- */
+
+function DayDetailModal({ date, entries, onClose, onEdit, onDelete, onCloseEpisode }) {
+  return (
+    <ModalShell title={formatDate(date)} icon={<CalendarDays size={18} color={C.accent} />} onCancel={onClose}>
+      {entries.length === 0 ? (
+        <p className="text-sm" style={{ color: C.inkSoft }}>No hay registros este día.</p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {entries.map((e) => (
+            <EntryCard key={e.id} entry={e} onDelete={() => onDelete(e.id)} onClose={() => onCloseEpisode(e.id)} onEdit={onEdit} />
+          ))}
+        </ul>
+      )}
+    </ModalShell>
+  );
+}
+
 /* ---------------- stats tab ---------------- */
 
 function StatBar({ label, value, max, color }) {
@@ -1230,7 +1316,21 @@ function StatBar({ label, value, max, color }) {
   );
 }
 
-function StatsTab({ episodes, eqs, joys, triggers, falseAlarms, topGaps, calmMilestonesAchieved, eqMilestonesAchieved, falseAlarmMilestonesAchieved, overallCalmMs, personStreak }) {
+function StatsTab({ episodes, eqs, joys, triggers, falseAlarms, entries, topGaps, calmMilestonesAchieved, eqMilestonesAchieved, falseAlarmMilestonesAchieved, overallCalmMs, personStreak, onSelectDay }) {
+  const [viewMonth, setViewMonth] = useState(() => { const d = new Date(); d.setDate(1); return d; });
+  const monthGrid = useMemo(() => {
+    const year = viewMonth.getFullYear();
+    const month = viewMonth.getMonth();
+    const firstOfMonth = new Date(year, month, 1);
+    const startWeekday = (firstOfMonth.getDay() + 6) % 7; // Monday = 0 ... Sunday = 6
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const cells = [];
+    for (let i = 0; i < startWeekday; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, month, d));
+    while (cells.length % 7 !== 0) cells.push(null);
+    return cells;
+  }, [viewMonth]);
+  const monthLabel = viewMonth.toLocaleDateString("es-CO", { month: "long", year: "numeric" });
   const totalFault = episodes.reduce((acc, e) => (e.fault ? acc + 1 : acc), 0);
   const faultCounts = useMemo(() => { const c = { Mía: 0, "De la otra persona": 0, Compartida: 0 }; episodes.forEach((e) => { if (e.fault) c[e.fault] = (c[e.fault] || 0) + 1; }); return c; }, [episodes]);
   const byWhoCounts = useMemo(() => { const c = {}; WHO_OPTIONS.forEach((w) => (c[w] = 0)); episodes.forEach((e) => (c[e.who] = (c[e.who] || 0) + 1)); return c; }, [episodes]);
@@ -1258,6 +1358,36 @@ function StatsTab({ episodes, eqs, joys, triggers, falseAlarms, topGaps, calmMil
   return (
     <div>
       <h2 className="font-display text-2xl font-extrabold mb-4" style={{ color: C.ink }}>Estadísticas</h2>
+
+      <div className="rounded-[26px] p-5 mb-6" style={{ background: `linear-gradient(160deg, ${C.accentBg}, ${C.surface})`, border: `1px solid ${C.border}` }}>
+        <div className="flex items-center justify-between mb-4">
+          <button onClick={() => setViewMonth((m) => { const d = new Date(m); d.setMonth(d.getMonth() - 1); return d; })} aria-label="Mes anterior" className="rounded-full p-1.5" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
+            <ChevronLeft size={16} color={C.inkSoft} />
+          </button>
+          <span className="font-display text-sm font-extrabold capitalize" style={{ color: C.ink }}>{monthLabel}</span>
+          <button onClick={() => setViewMonth((m) => { const d = new Date(m); d.setMonth(d.getMonth() + 1); return d; })} aria-label="Mes siguiente" className="rounded-full p-1.5" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
+            <ChevronRight size={16} color={C.inkSoft} />
+          </button>
+        </div>
+        <div className="grid grid-cols-7 gap-y-2 mb-1">
+          {["L", "M", "X", "J", "V", "S", "D"].map((l) => (
+            <div key={l} className="text-center text-[10px] font-bold uppercase" style={{ color: C.inkFaint }}>{l}</div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-y-2">
+          {monthGrid.map((date, i) => {
+            if (!date) return <div key={`pad${i}`} />;
+            const isFuture = date > now;
+            const dayEntries = entriesForDay(entries, date);
+            return (
+              <div key={date.toDateString()} className="flex justify-center">
+                <DayChip date={date} type={dominantEntryType(dayEntries)} muted={isFuture} size={32} onClick={isFuture ? undefined : () => onSelectDay(date)} />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="grid grid-cols-3 gap-2 mb-6">
         {[["episodios", episodes.length, C.episode], ["IE", eqs.length, C.eq], ["detonantes", triggers.length, C.trigger], ["felicidad", joys.length, C.joy], ["falsas alarmas", falseAlarms.length, C.falsealarm]].map(([label, val, color]) => (
           <div key={label} className="rounded-2xl p-2.5 text-center" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
