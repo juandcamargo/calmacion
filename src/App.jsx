@@ -9,8 +9,8 @@ import { supabase } from "./lib/supabaseClient";
 import { C, MonkMark } from "./theme.jsx";
 import Auth from "./Auth.jsx";
 
-const WHO_OPTIONS = ["Jen", "Trabajo", "Otros"];
-const DISPLAY_WHO = { Jen: "Con Jen", Trabajo: "Por el Trabajo", Otros: "Por Otros" };
+const WHO_OPTIONS = ["Jen", "Trabajo", "Otros", "Salvador"];
+const DISPLAY_WHO = { Jen: "Con Jen", Trabajo: "Por el Trabajo", Otros: "Por Otros", Salvador: "Con Salvador" };
 const FAULT_OPTIONS = ["Mía", "De la otra persona", "Compartida"];
 const RESOLUTION_OPTIONS = ["Se disculparon conmigo", "Me disculpé", "Lo superé"];
 const TOOL_OPTIONS = ["Sándwich", "Tiempo Fuera", "Otro", "Sin herramientas"];
@@ -698,7 +698,11 @@ function buildAdvice({ who, intensity, eqs, personStreak }) {
   const ranked = Object.entries(toolCounts).sort((a, b) => b[1] - a[1]);
   const bestTool = ranked[0];
 
-  const genericTip = intensity >= 4
+  const genericTip = who === "Salvador"
+    ? (intensity >= 4
+        ? "Si Salvador está en un lugar seguro (como la cuna), está bien alejarte unos segundos y respirar. Una pausa breve no le hace daño, y a ti te evita reaccionar desde el agotamiento."
+        : "El llanto o la pataleta no es un ataque personal — es la única forma que tiene de comunicarse todavía. Respira, y si puedes, pide el relevo de alguien más unos minutos.")
+    : intensity >= 4
     ? "Respira contando 4 segundos al inhalar y 6 al exhalar, al menos tres veces, antes de decir o hacer nada."
     : intensity === 3
     ? "Sal del espacio dos minutos antes de responder. No hace falta explicar por qué todavía."
@@ -809,7 +813,7 @@ function HomeTab({ lvl, overallCalmMs, overallCalmDays, personStreak, calmMilest
         <div className="text-[11px] uppercase tracking-wide" style={{ color: C.inkSoft }}>tiempo de calma total</div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 mb-5">
+      <div className="grid grid-cols-2 gap-2 mb-5">
         {WHO_OPTIONS.map((who) => (
           <div key={who} className="rounded-2xl p-3 text-center" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
             <div className="text-xs font-extrabold" style={{ color: C.ink }}>{DISPLAY_WHO[who]}</div>
@@ -1197,7 +1201,7 @@ function StatsTab({ episodes, eqs, joys, triggers, topGaps, calmMilestonesAchiev
           <div className="font-display text-2xl font-extrabold" style={{ color: C.accent }}>{formatDHM(overallCalmMs)}</div>
           <div className="text-[11px] uppercase" style={{ color: C.inkSoft }}>racha actual</div>
         </div>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {WHO_OPTIONS.map((w) => (
             <div key={w} className="rounded-xl p-2 text-center" style={{ background: C.surfaceMuted }}>
               <div className="text-[11px] font-extrabold" style={{ color: C.ink }}>{DISPLAY_WHO[w]}</div>
