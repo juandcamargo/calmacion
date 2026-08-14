@@ -162,8 +162,8 @@ function CalmFace({ days }) {
   const maxDays = LEVELS[LEVELS.length - 1].days;
   const t = Math.min(Math.max(days / maxDays, 0), 1);
   const bg = lerpColor("#C9D4CD", C.accent, t);
-  const browRotate = -20 + t * 32;
-  const mouthCurve = 16 - t * 52;
+  const browRotate = 20 - t * 32;
+  const mouthCurve = -16 + t * 52;
   const eyeHappy = Math.min(Math.max((t - 0.55) / 0.45, 0), 1);
   const blush = Math.min(Math.max((t - 0.35) * 1.2, 0), 1);
   return (
