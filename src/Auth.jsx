@@ -48,7 +48,7 @@ export default function Auth() {
   }
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "'Plus Jakarta Sans', sans-serif" }} className="flex items-center justify-center p-6">
+    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "'Gilroy', sans-serif" }} className="flex items-center justify-center p-6">
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         .spin { animation: spin 0.7s linear infinite; }
@@ -57,7 +57,7 @@ export default function Auth() {
       <div className="w-full" style={{ maxWidth: 380 }}>
         <div className="text-center mb-8">
           <div className="mx-auto mb-3" style={{ width: 40 }}><MonkMark size={40} color={C.accent} /></div>
-          <h1 className="font-display text-2xl font-extrabold" style={{ color: C.ink, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Calmación</h1>
+          <h1 className="font-display text-2xl font-extrabold" style={{ color: C.ink, fontFamily: "'Gilroy', sans-serif" }}>Calmación</h1>
           <p className="text-sm mt-1" style={{ color: C.inkSoft }}>Tu bitácora personal de calma</p>
         </div>
 

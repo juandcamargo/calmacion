@@ -1,21 +1,29 @@
-/* ---------------- design tokens (friendly / modern, single accent + categorical tags) ---------------- */
+/* ---------------- design tokens ----------------
+   Playful pastel palette requested by the user (mood-tracker reference):
+   yellow #fed282, mint #77d6bd, purple #b587fb, coral #ff8a8e.
+   The app has six color-coded slots (accent + 5 entry types), so two
+   extra tints — pink for joy, sky-blue for falsealarm — were derived
+   to keep every category visually distinct. Button/badge text is white,
+   so the four source hues are deepened a notch from the reference where
+   needed to stay readable; the lighter reference tone lives on in each
+   *Bg wash. */
 
 export const C = {
-  bg: "#F6F8F7",
+  bg: "#F7F5F1",
   surface: "#FFFFFF",
-  surfaceMuted: "#EEF3F0",
-  border: "#E1E8E4",
-  ink: "#141B17",
-  inkSoft: "#5C6B63",
-  inkFaint: "#8B978F",
+  surfaceMuted: "#FBEEDA",
+  border: "#F0E4CE",
+  ink: "#2B2440",
+  inkSoft: "#6E6580",
+  inkFaint: "#A79FBA",
 
-  accent: "#0FA06E", accentDeep: "#0B7A55", accentBg: "#E1F5EB",
+  accent: "#3FBBA0", accentDeep: "#278F79", accentBg: "#DFF6EF",
 
-  episode: "#E0664A", episodeBg: "#FBEAE4",
-  eq: "#CB9A22", eqBg: "#FAF1D6",
-  trigger: "#6E8CAE", triggerBg: "#E8EEF4",
-  joy: "#CE5F8D", joyBg: "#FAEAF1",
-  falsealarm: "#8B7FD1", falsealarmBg: "#EEEAFA",
+  episode: "#F16E73", episodeBg: "#FFE7E8",
+  eq: "#E0A94A", eqBg: "#FDECC9",
+  trigger: "#9B72F2", triggerBg: "#F1E9FE",
+  joy: "#FF7FB0", joyBg: "#FFE7F2",
+  falsealarm: "#5BB8E8", falsealarmBg: "#E4F4FC",
 };
 
 /* ---------------- brand mark (minimalist lotus monk) ---------------- */

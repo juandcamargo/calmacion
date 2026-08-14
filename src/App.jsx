@@ -203,7 +203,7 @@ function Chip({ label, active, onClick, color }) {
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className="px-4 py-2 rounded-full text-xs font-bold chip-hover"
+      className={`px-4 py-2 rounded-full text-xs font-bold chip-hover${active ? " chip-pop" : ""}`}
       style={{
         background: active ? (color || C.accent) : C.surfaceMuted,
         color: active ? "#fff" : C.inkSoft,
@@ -474,15 +474,22 @@ function Calma({ session }) {
   }
 
   return (
-    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "'Plus Jakarta Sans', sans-serif", position: "relative" }}>
+    <div style={{ background: C.bg, minHeight: "100vh", fontFamily: "'Gilroy', sans-serif", position: "relative" }}>
       <style>{`
-        :root { --ease-out: cubic-bezier(0.23, 1, 0.32, 1); --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1); }
-        .font-display { font-family: 'Plus Jakarta Sans', sans-serif; }
-        @keyframes breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.035); } }
-        .breathing { animation: breathe 5s var(--ease-in-out) infinite; }
-        @keyframes popIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        .pop-in { opacity: 0; animation: popIn 220ms var(--ease-out) forwards; }
+        :root { --ease-out: cubic-bezier(0.23, 1, 0.32, 1); --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1); --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .font-display { font-family: 'Gilroy', sans-serif; }
+        @keyframes breathe {
+          0%, 100% { transform: scale(1, 1) rotate(0deg); }
+          25% { transform: scale(1.045, 0.965) rotate(-1.5deg); }
+          50% { transform: scale(0.975, 1.045) rotate(0deg); }
+          75% { transform: scale(1.03, 0.98) rotate(1.5deg); }
+        }
+        .breathing { animation: breathe 3.2s var(--ease-in-out) infinite; transform-origin: 50% 65%; }
+        @keyframes popIn { 0% { opacity: 0; transform: scale(0.7); } 60% { opacity: 1; transform: scale(1.1); } 100% { opacity: 1; transform: scale(1); } }
+        .pop-in { opacity: 0; animation: popIn 380ms var(--ease-bounce) forwards; }
         .pop-in:nth-child(1){animation-delay:0ms}.pop-in:nth-child(2){animation-delay:40ms}.pop-in:nth-child(3){animation-delay:80ms}.pop-in:nth-child(4){animation-delay:120ms}.pop-in:nth-child(n+5){animation-delay:160ms}
+        @keyframes chipPop { 0% { transform: scale(0.82); } 55% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        .chip-pop { animation: chipPop 340ms var(--ease-bounce); }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         @keyframes slideDown { from { transform: translateY(0); } to { transform: translateY(100%); } }
         .slide-up { animation: slideUp 320ms var(--ease-out); }
@@ -497,7 +504,7 @@ function Calma({ session }) {
         @keyframes popScale { 0% { transform: scale(0.5); opacity: 0; } 60% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); } }
         .pop-scale { animation: popScale 420ms var(--ease-out); }
         button { transition: opacity 200ms var(--ease-out), background-color 200ms var(--ease-out); }
-        button:active { transition: transform 120ms var(--ease-out); transform: scale(0.96); }
+        button:active { transition: transform 150ms var(--ease-bounce); transform: scale(0.88); }
         .card-hover { transition: background-color 200ms var(--ease-out), transform 200ms var(--ease-out); }
         @media (hover: hover) and (pointer: fine) {
           .card-hover:hover { background: ${C.surfaceMuted} !important; transform: translateY(-1px); }
@@ -506,7 +513,7 @@ function Calma({ session }) {
         button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid ${C.accent}; outline-offset: 2px; }
         @media (prefers-reduced-motion: reduce) {
           .breathing { animation: none !important; }
-          .pop-in, .slide-up, .slide-down, .fade-in, .fade-out, .pop-scale { animation: fadeIn 200ms ease !important; }
+          .pop-in, .slide-up, .slide-down, .fade-in, .fade-out, .pop-scale, .chip-pop { animation: fadeIn 200ms ease !important; }
           button:active { transform: none !important; }
         }
       `}</style>
