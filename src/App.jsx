@@ -160,12 +160,16 @@ function useCountUp(value, duration = 700) {
 
 function CalmFace({ days }) {
   const maxDays = LEVELS[LEVELS.length - 1].days;
-  const t = Math.min(Math.max(days / maxDays, 0), 1);
+  const raw = Math.min(Math.max(days / maxDays, 0), 1);
+  // Eased, not linear: happiness should be visible after days, not just
+  // near the 180-day finish line. t=0 is calm/at-peace (never stern), and
+  // most of the joyful growth happens in the first few weeks.
+  const t = Math.pow(raw, 0.45);
   const bg = lerpColor("#C9D4CD", C.accent, t);
-  const browRotate = 20 - t * 32;
-  const mouthCurve = -16 + t * 52;
-  const eyeHappy = Math.min(Math.max((t - 0.55) / 0.45, 0), 1);
-  const blush = Math.min(Math.max((t - 0.35) * 1.2, 0), 1);
+  const browRotate = 4 - t * 20;
+  const mouthCurve = 10 + t * 32;
+  const eyeHappy = Math.min(Math.max((t - 0.35) / 0.45, 0), 1);
+  const blush = Math.min(Math.max((t - 0.15) * 1.3, 0), 1);
   return (
     <svg viewBox="0 0 160 160" className="w-full h-full breathing">
       <circle cx="80" cy="80" r="72" fill={bg} />
