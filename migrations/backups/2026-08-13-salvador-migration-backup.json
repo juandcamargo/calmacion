@@ -1,0 +1,21 @@
+[
+  {
+    "id": "1786544427391-c3lwn4",
+    "date": "2026-08-12T12:19:00+00:00",
+    "data": {
+      "who": "Otros",
+      "note": "Se hizo Popo y tocó bañarlo. Estaba inmanejable y estalle en ira",
+      "fault": "Mía",
+      "place": "Casa",
+      "closed": true,
+      "closure": {
+        "date": "2026-08-12T14:20:00.000Z",
+        "place": "Casa",
+        "detail": "Me reí después de todo",
+        "resolution": "Lo superé"
+      },
+      "intensity": 3,
+      "contextDetail": "Salvador"
+    }
+  }
+]
