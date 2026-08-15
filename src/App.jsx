@@ -1214,14 +1214,14 @@ function FalseAlarmModal({ onCancel, onSave, saving, editEntry }) {
   const [description, setDescription] = useState((editEntry && editEntry.description) || "");
   const [resolvedInternally, setResolvedInternally] = useState(editEntry ? !!editEntry.resolvedInternally : null);
   const [resolution, setResolution] = useState((editEntry && editEntry.resolution) || "");
-  const canSave = who && description.trim() && resolvedInternally !== null && date;
+  const canSave = who && description.trim() && date;
   return (
     <ModalShell title={editEntry ? "Editar falsa alarma" : "Falsa Alarma"} icon={<Siren size={18} color={C.falsealarm} />} onCancel={onCancel}>
       <Field label="Fecha y hora"><input type="datetime-local" value={date} onChange={(e) => setDate(e.target.value)} className="w-full px-3 py-2.5 text-sm" style={inputStyle} /></Field>
       <Field label="¿Quién detonó la falsa alarma?"><WhoPicker value={who} detail={whoDetail} onChange={setWho} onDetailChange={setWhoDetail} color={C.falsealarm} /></Field>
       <Field label={`Nivel de incomodidad: ${discomfort}/5`}><input type="range" min="1" max="5" value={discomfort} onChange={(e) => setDiscomfort(Number(e.target.value))} className="w-full" style={{ accentColor: C.falsealarm }} /></Field>
       <Field label="¿Qué pasó?"><textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className="w-full px-3 py-2.5 text-sm resize-none" style={inputStyle} /></Field>
-      <Field label="¿La resolviste internamente?">
+      <Field label="¿La resolviste internamente? (opcional)">
         <div className="flex gap-2 flex-wrap">
           <Chip label="Sí" active={resolvedInternally === true} onClick={() => setResolvedInternally(true)} color={C.falsealarm} />
           <Chip label="No" active={resolvedInternally === false} onClick={() => setResolvedInternally(false)} color={C.falsealarm} />
@@ -1235,8 +1235,8 @@ function FalseAlarmModal({ onCancel, onSave, saving, editEntry }) {
         saving={saving}
         color={C.falsealarm}
         onClick={() => onSave(editEntry
-          ? { ...editEntry, date: new Date(date).toISOString(), who, contextDetail: whoDetail, discomfort, description, resolvedInternally, resolution: resolvedInternally ? resolution : "" }
-          : { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, type: "falsealarm", date: new Date(date).toISOString(), who, contextDetail: whoDetail, discomfort, description, resolvedInternally, resolution: resolvedInternally ? resolution : "" }
+          ? { ...editEntry, date: new Date(date).toISOString(), who, contextDetail: whoDetail, discomfort, description, resolvedInternally: !!resolvedInternally, resolution: resolvedInternally ? resolution : "" }
+          : { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, type: "falsealarm", date: new Date(date).toISOString(), who, contextDetail: whoDetail, discomfort, description, resolvedInternally: !!resolvedInternally, resolution: resolvedInternally ? resolution : "" }
         )}
       >
         {editEntry ? "Guardar cambios" : "Guardar falsa alarma"}
