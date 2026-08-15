@@ -5,10 +5,16 @@
 -- Los campos que cambian según el tipo de registro (nota, intensidad, herramienta,
 -- cierre de episodio, etc.) se guardan en la columna "data" para no tener que
 -- migrar el esquema cada vez que la app agregue un campo nuevo.
+-- No check constraint on "type": the frontend is the single source of
+-- truth for which entry types exist (see WHO_OPTIONS / QuickAddSheet in
+-- App.jsx), and a DB-side whitelist here has already caused one silent
+-- "can't save" bug when a new type (falsealarm) was added to the app but
+-- not to this constraint. Row Level Security below is what actually
+-- protects the data — this table just stores whatever the app writes.
 create table if not exists entries (
   id text primary key,
   user_id uuid references auth.users not null default auth.uid(),
-  type text not null check (type in ('episode', 'eq', 'trigger', 'joy')),
+  type text not null,
   date timestamptz not null,
   data jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
